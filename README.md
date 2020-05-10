@@ -1,6 +1,8 @@
 
 # nhentai-exporter
 
+Want to do more with your nhentai account? [shameless-plug-here](https://github.com/Benjababe/NotCafeDownloader)
+
 ## Prerequisites
 
 [beautifulsoup4](https://pypi.org/project/beautifulsoup4/) and [requests](https://pypi.org/project/requests/) are required before running the script. Install through the requirements.txt file.
