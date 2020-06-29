@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 import argparse
 import ast
+import html
 import os
 import requests
 import sys
@@ -19,7 +20,8 @@ bio_path = base_path + "/old_bio.txt"
 user_paths = ["", ""]
 usernames = ["", ""]
 
-def login(username, password, age = -1):
+#deprecated as of who knew when
+def login(username, password, age):
     session = requests.Session()
     res = session.get(login_url)
     soup = BeautifulSoup(res.content, "html.parser")
@@ -44,21 +46,53 @@ def login(username, password, age = -1):
         sys.exit(0)
 #end_login
 
-def get_account_path(session):
+def login_session(sessionid, age):
+    session = requests.Session()
+    sess_cookie = requests.cookies.create_cookie(domain="nhentai.net",name="sessionid",value=sessionid)
+    session.cookies.set_cookie(sess_cookie)
+
+    res = session.get(base_url)
+    soup = BeautifulSoup(res.content, "html.parser")
+
+    sign_in_btn = soup.find("li", {"class": "menu-sign-in"})
+    if sign_in_btn == None:
+        print("Login session updated successfully")
+        if (age >= 0):
+            set_account_info(session, age)
+        return session
+    else:
+        print("Imported session is invalid")
+        sys.exit(0)
+#end_login_session
+
+def set_account_info(session, age):
     res = session.get(base_url)
     soup = BeautifulSoup(res.content, "html.parser")
     menu = soup.find("ul", {"class": "menu right"})
+
     items = list(menu.children)
-    account = items[1].next_element.attrs["href"]
-    return account
-#end_get_account_path
+    user_path = items[1].next_element.attrs["href"]
+    username = user_path[user_path.rindex("/")+1:]
+
+    user_paths[age] = user_path
+    usernames[age] = username
+#end_get_account_info
 
 def favorite(session, mango_url):
     res = session.get(mango_url)
     soup = BeautifulSoup(res.content, "html.parser")
-    token = soup.find("input", {"name": "csrfmiddlewaretoken"})["value"]
 
-    res = session.post(mango_url + "favorite", headers = {
+    fav = soup.find("span", {"class": "text"}).text.lower()
+    html = res.text
+    tk_start = html.index("csrf_token: \"")
+    #13 to account for the csrf_token: "
+    html = html[tk_start+13:]
+    token = html[:html.index("\"")]
+
+    mango_id = mango_url.split("/")[-2]
+    post_url = base_url + "/api/gallery/" + mango_id + "/" + fav
+
+    res = session.post(post_url, headers = {
         "referer": mango_url,
         "x-csrftoken": token,
         "x-requested-with": "XMLHttpRequest"
@@ -115,14 +149,16 @@ def import_favorites(new_session):
 def export_old_tags(old_session):
     blacklist_url = base_url + user_paths[0] + "/blacklist"
     res = old_session.get(blacklist_url)
-    #shifts start to "var raw_tags =" to isolate the tags initialisation
-    tags = res.text[res.text.index("var raw_tags = "):]
-    #shift end to first instance of ";" and removes the initialisation variable to get only the value
-    tag_str = tags[0:tags.index(";")].replace("var raw_tags = ", "")
+
+    search_str = "window._blacklist_tags = JSON.parse(\""
+    tags = res.text[res.text.index(search_str) + len(search_str):]
+    tags = tags[:tags.index("\")")]
+    tags = tags.encode().decode("unicode-escape")
+
     with open(tag_path, "w") as f:
-        f.write(tag_str)
+        f.write(tags)
         f.close()
-        print("Tags successfully exported!")
+        print("Tags exported successfully!")
 #end_export_old_tags
 
 def import_old_tags(new_session):
@@ -212,8 +248,8 @@ def query(s):
         query(s)
 
 def export_nh():
-    old = [input("Please enter your old username: "), input("Please enter your old password: ")]
-    old_session = login(old[0], old[1], 0)
+    old_sessionid = input("Please enter your old account's login session: ")
+    old_session = login_session(old_sessionid, 0)
     if query("Do you wish to export your blacklisted tags?"):
         export_old_tags(old_session)
     if query("Do you wish to export your account bio?"):
@@ -223,8 +259,8 @@ def export_nh():
 #end_export_nh
 
 def import_nh():
-    new = [input("Please enter your new username: "), input("Please enter your new password: ")]
-    new_session = login(new[0], new[1], 1)
+    new_sessionid = input("Please enter your new account's login session: ")
+    new_session = login_session(new_sessionid, 1)
     if query("Do you wish to import your old blacklisted tags?"):
         import_old_tags(new_session)
     if query("Do you wish to import your old account bio?"):
