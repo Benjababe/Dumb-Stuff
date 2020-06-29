@@ -13,6 +13,8 @@ Want to do more with your nhentai account? [shameless-plug-here](https://github.
 
 The script can be run normally to proceed with the full import and exporting process and it will accept arguments if you specifically want to import or export your account. Use `-e or --export` to export and `-i or --import` to import. The account's blacklisted tags, bio and favourited mangas will be transferred in the process.
 
+You will be required to retrieve the sessionid cookie of your nhentai account's session in a web browser that it is currently logged in to.
+
 When importing however, please make sure that the corresponding files for the category exist. They will be named
 
 - old_tags.txt
