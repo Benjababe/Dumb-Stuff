@@ -1,11 +1,10 @@
-from bs4 import BeautifulSoup
 import argparse
 import ast
-import html
 import os
+import re
 import requests
 import sys
-import time
+from bs4 import BeautifulSoup
 
 base_url = "https://nhentai.net"
 login_url = "https://nhentai.net/login/"
@@ -16,39 +15,41 @@ tag_path = base_path + "/old_tags.txt"
 fav_path = base_path + "/old_favs.txt"
 bio_path = base_path + "/old_bio.txt"
 
-#0 = old, 1 = new
+# 0 = old, 1 = new
 user_paths = ["", ""]
 usernames = ["", ""]
 
-#deprecated as of who knew when
+
 def login(username, password, age):
     session = requests.Session()
     res = session.get(login_url)
     soup = BeautifulSoup(res.content, "html.parser")
     token = soup.find("input", {"name": "csrfmiddlewaretoken"})["value"]
 
-    #referer header is very important in CSRF situations for this site
-    res = session.post(login_url, data = {
+    # referer header is very important in CSRF situations for this site
+    res = session.post(login_url, data={
         "csrfmiddlewaretoken": token,
         "username_or_email": username,
         "password": password,
         "next": ""
-    }, headers = { "referer": login_url })
-    #only redirects to base url on successful login
+    }, headers={"referer": login_url})
+    # only redirects to base url on successful login
     if res.url == (base_url + "/"):
         print("Logged into " + username + " successfully")
         if (age >= 0):
-            user_paths[age] = get_account_path(session)
+            #user_paths[age] = get_account_path(session)
             usernames[age] = username
         return session
     else:
         print("Login for " + username + " failed...")
         sys.exit(0)
-#end_login
+# end_login
+
 
 def login_session(sessionid, age):
     session = requests.Session()
-    sess_cookie = requests.cookies.create_cookie(domain="nhentai.net",name="sessionid",value=sessionid)
+    sess_cookie = requests.cookies.create_cookie(
+        domain="nhentai.net", name="sessionid", value=sessionid)
     session.cookies.set_cookie(sess_cookie)
 
     res = session.get(base_url)
@@ -63,7 +64,8 @@ def login_session(sessionid, age):
     else:
         print("Imported session is invalid")
         sys.exit(0)
-#end_login_session
+# end_login_session
+
 
 def set_account_info(session, age):
     res = session.get(base_url)
@@ -76,75 +78,86 @@ def set_account_info(session, age):
 
     user_paths[age] = user_path
     usernames[age] = username
-#end_get_account_info
+# end_get_account_info
 
-def favorite(session, mango_url):
-    res = session.get(mango_url)
+
+async def favourite(session, mango_id):
+    res = session.get(f"{base_url}/g/{mango_id}")
     soup = BeautifulSoup(res.content, "html.parser")
 
     fav = soup.find("span", {"class": "text"}).text.lower()
     html = res.text
     tk_start = html.index("csrf_token: \"")
-    #13 to account for the csrf_token: "
+    # 13 to account for the csrf_token: "
     html = html[tk_start+13:]
     token = html[:html.index("\"")]
 
-    mango_id = mango_url.split("/")[-2]
     post_url = base_url + "/api/gallery/" + mango_id + "/" + fav
 
-    res = session.post(post_url, headers = {
-        "referer": mango_url,
+    res = session.post(post_url, headers={
+        "referer": f"{base_url}/g/{mango_id}",
         "x-csrftoken": token,
         "x-requested-with": "XMLHttpRequest"
-    }) 
+    })
 
     if res.ok:
-        fav = soup.find("span", { "class": "text" }).text
-        return mango_url + " has been " + ("favorited" if fav == "Favorite" else "unfavorited")
-#end_favorite
+        fav = soup.find("span", {"class": "text"}).text
+        return mango_id + " has been " + ("favorited" if fav == "Favorite" else "unfavorited")
+# end_favorite
+
 
 def get_old_favorites(old_session):
     res = old_session.get(fav_url)
     soup = BeautifulSoup(res.content, "html.parser")
     pagination = soup.find("section", {"class": "pagination"})
 
-    #only 1 page of favorites
+    # only 1 page of favorites
     if pagination == None:
         export_old_favorites(old_session, 1, 1)
 
     else:
-        first = soup.find("a", {"class": "current"}).attrs["href"].split("=")[1]
+        first = soup.find("a", {"class": "current"}
+                          ).attrs["href"].split("=")[1]
         last = soup.find("a", {"class": "last"}).attrs["href"].split("=")[1]
         export_old_favorites(old_session, int(first), int(last))
-#end_get_old_favorites
+# end_get_old_favorites
+
 
 def export_old_favorites(old_session, first, last):
-    #clears the file if it already exists
+    # clears the file if it already exists
     open(fav_path, "w").close()
     for pg in range(first, last + 1):
         fav_pg = fav_url + "?page=" + str(pg)
         res = old_session.get(fav_pg)
         soup = BeautifulSoup(res.content, "html.parser")
-        favorites = soup.find_all("a", {"class": "cover"})
-        for i in range(0, len(favorites)):
-            print("Retrieving page " + str(pg) + " index " + str(i) + "...", end = "\r")
+        favourites = soup.find_all("a", {"class": "cover"})
+        for i in range(0, len(favourites)):
+            print("Retrieving page " + str(pg) +
+                  " index " + str(i) + "...", end="\r")
+
+            # writes gallery id every line
+            id = favourites[i].attrs["href"]
+            id = re.match(r"\/g\/([0-9]{1,})(\/)", id).group(1)
+
             with open(fav_path, "a") as f:
-                f.write(base_url + favorites[i].attrs["href"] + "\n")
+                f.write(id + "\n")
                 f.close()
         res.close()
     print("\nFavorites successfully exported!")
-#end_export_old_favorites
+# end_export_old_favorites
+
 
 def import_favorites(new_session):
     with open(fav_path, "r") as f:
-        lines = f.readlines()
+        lines = f.readlines()[::-1]
         for i in range(0, len(lines)):
-            line = lines[::-1][i].strip()
-            line = line.strip()
-            s = favorite(new_session, line)
-            print(s + " (" + str(i + 1) + "/" + str(len(lines)) + ")     ", end = "\r")
+            line = lines[i].strip()
+            s = favourite(new_session, line)
+            print(s + " (" + str(i + 1) + "/" +
+                  str(len(lines)) + ")     ", end="\r")
     print("\nFavorites successfully imported!")
-#end_import_favorites
+# end_import_favorites
+
 
 def export_old_tags(old_session):
     blacklist_url = base_url + user_paths[0] + "/blacklist"
@@ -159,17 +172,18 @@ def export_old_tags(old_session):
         f.write(tags)
         f.close()
         print("Tags exported successfully!")
-#end_export_old_tags
+# end_export_old_tags
+
 
 def import_old_tags(new_session):
     blacklist_url = base_url + user_paths[1] + "/blacklist"
 
     res = new_session.get(blacklist_url)
-    #shifts start to "csrf_token" to isolate the token initialisation
+    # shifts start to "csrf_token" to isolate the token initialisation
     token = res.text[res.text.index("csrf_token:"):]
-    #shift end to first instance of "," and removes the initialisation variable to get only the token value
+    # shift end to first instance of "," and removes the initialisation variable to get only the token value
     token_str = token[0:token.index(",")].replace("csrf_token:", "").strip()
-    #replaces the "" in the initialisation process
+    # replaces the "" in the initialisation process
     token_str = token_str.replace("\"", "")
 
     with open(tag_path, "r") as f:
@@ -177,10 +191,10 @@ def import_old_tags(new_session):
         tags = ast.literal_eval(tag_str)
         added_tags = generate_added_tags(tags)
 
-        res = new_session.post(blacklist_url, json = {
+        res = new_session.post(blacklist_url, json={
             "added": added_tags,
             "removed": []
-        }, headers = {
+        }, headers={
             "x-requested-with": "XMLHttpRequest",
             "x-csrftoken": token_str,
             "referer": blacklist_url
@@ -189,11 +203,13 @@ def import_old_tags(new_session):
             print("Tags successfully imported!")
         else:
             print("Tags failed to import. Reason: " + res.reason)
-#end_import_old_tags
+# end_import_old_tags
+
 
 def generate_added_tags(tags):
     return [{"id": tag["id"], "name": tag["name"], "type": tag["type"]} for tag in tags]
-#end_generate_added_tags
+# end_generate_added_tags
+
 
 def export_bio(old_session):
     bio_url = base_url + user_paths[0] + "/edit"
@@ -211,7 +227,8 @@ def export_bio(old_session):
             f.write(about + "\n" + fav_tags + "\n" + theme.attrs["value"])
             f.close()
             print("Bio successfully exported!")
-#end_export_bio
+# end_export_bio
+
 
 def import_bio(new_session):
     bio_url = base_url + user_paths[1] + "/edit"
@@ -223,19 +240,20 @@ def import_bio(new_session):
     with open(bio_path, "r") as f:
         old_bio = f.readlines()
 
-        res = new_session.post(bio_url, data = {
+        res = new_session.post(bio_url, data={
             "csrfmiddlewaretoken": token,
             "username": usernames[1],
             "about": old_bio[0],
             "favorite_tags": old_bio[1],
             "theme": old_bio[2],
-        }, headers = { "referer": bio_url })
+        }, headers={"referer": bio_url})
 
         if res.ok:
             print("Bio successfully imported!")
         else:
             print("Bio failed to be imported. Reason: " + res.reason)
-#end_import_bio
+# end_import_bio
+
 
 def query(s):
     query_input = input(s + " (Y/n): ").strip().lower()
@@ -246,9 +264,12 @@ def query(s):
     else:
         print("Invalid input.")
         query(s)
+# end_query
+
 
 def export_nh():
-    old_sessionid = input("Please enter your old account's login session: ")
+    #old_sessionid = input("Please enter your old account's login session: ").strip()
+    old_sessionid = "4g2vllvzzeaf9wlqkvvyxhbwhfeork0l"
     old_session = login_session(old_sessionid, 0)
     if query("Do you wish to export your blacklisted tags?"):
         export_old_tags(old_session)
@@ -256,10 +277,12 @@ def export_nh():
         export_bio(old_session)
     if query("Do you wish to export your favorited hentei mangoes?"):
         get_old_favorites(old_session)
-#end_export_nh
+# end_export_nh
+
 
 def import_nh():
-    new_sessionid = input("Please enter your new account's login session: ")
+    #new_sessionid = input("Please enter your new account's login session: ").strip()
+    new_sessionid = "t1gpeo0s12jv5eamnnmd4kcbc25lpxof"
     new_session = login_session(new_sessionid, 1)
     if query("Do you wish to import your old blacklisted tags?"):
         import_old_tags(new_session)
@@ -267,12 +290,16 @@ def import_nh():
         import_bio(new_session)
     if query("Do you wish to import your old favourited hentei mangoes?"):
         import_favorites(new_session)
-#end_import_nh
+# end_import_nh
 
-parser = argparse.ArgumentParser(description = "Account exporter/importer for nhentai")
 
-parser.add_argument("-e", "--export", action = "store_true", dest = "export_acc", default = False)
-parser.add_argument("-i", "--import", action = "store_true", dest = "import_acc", default = False)
+parser = argparse.ArgumentParser(
+    description="Account exporter/importer for nhentai")
+
+parser.add_argument("-e", "--export", action="store_true",
+                    dest="export_acc", default=False)
+parser.add_argument("-i", "--import", action="store_true",
+                    dest="import_acc", default=False)
 
 results = parser.parse_args()
 
