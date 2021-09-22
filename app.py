@@ -268,8 +268,7 @@ def query(s):
 
 
 def export_nh():
-    #old_sessionid = input("Please enter your old account's login session: ").strip()
-    old_sessionid = "4g2vllvzzeaf9wlqkvvyxhbwhfeork0l"
+    old_sessionid = input("Please enter your old account's login session: ").strip()
     old_session = login_session(old_sessionid, 0)
     if query("Do you wish to export your blacklisted tags?"):
         export_old_tags(old_session)
@@ -281,8 +280,7 @@ def export_nh():
 
 
 def import_nh():
-    #new_sessionid = input("Please enter your new account's login session: ").strip()
-    new_sessionid = "t1gpeo0s12jv5eamnnmd4kcbc25lpxof"
+    new_sessionid = input("Please enter your new account's login session: ").strip()
     new_session = login_session(new_sessionid, 1)
     if query("Do you wish to import your old blacklisted tags?"):
         import_old_tags(new_session)
