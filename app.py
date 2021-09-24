@@ -81,16 +81,14 @@ def set_account_info(session, age):
 # end_get_account_info
 
 
-async def favourite(session, mango_id):
+def favourite(session, mango_id):
     res = session.get(f"{base_url}/g/{mango_id}")
     soup = BeautifulSoup(res.content, "html.parser")
 
     fav = soup.find("span", {"class": "text"}).text.lower()
-    html = res.text
-    tk_start = html.index("csrf_token: \"")
-    # 13 to account for the csrf_token: "
-    html = html[tk_start+13:]
-    token = html[:html.index("\"")]
+
+    token_regex = r"csrf_token: \"([a-zA-Z0-9]{1,})\""
+    token = re.search(token_regex, res.text).groups()[0]
 
     post_url = base_url + "/api/gallery/" + mango_id + "/" + fav
 
@@ -102,7 +100,8 @@ async def favourite(session, mango_id):
 
     if res.ok:
         fav = soup.find("span", {"class": "text"}).text
-        return mango_id + " has been " + ("favorited" if fav == "Favorite" else "unfavorited")
+        return mango_id + " has been " + \
+            ("favorited" if fav == "Favorite" else "unfavorited")
 # end_favorite
 
 
@@ -116,8 +115,8 @@ def get_old_favorites(old_session):
         export_old_favorites(old_session, 1, 1)
 
     else:
-        first = soup.find("a", {"class": "current"}
-                          ).attrs["href"].split("=")[1]
+        first = soup.find("a", {"class": "current"})\
+            .attrs["href"].split("=")[1]
         last = soup.find("a", {"class": "last"}).attrs["href"].split("=")[1]
         export_old_favorites(old_session, int(first), int(last))
 # end_get_old_favorites
@@ -126,6 +125,7 @@ def get_old_favorites(old_session):
 def export_old_favorites(old_session, first, last):
     # clears the file if it already exists
     open(fav_path, "w").close()
+
     for pg in range(first, last + 1):
         fav_pg = fav_url + "?page=" + str(pg)
         res = old_session.get(fav_pg)
@@ -143,6 +143,7 @@ def export_old_favorites(old_session, first, last):
                 f.write(id + "\n")
                 f.close()
         res.close()
+
     print("\nFavorites successfully exported!")
 # end_export_old_favorites
 
@@ -155,6 +156,7 @@ def import_favorites(new_session):
             s = favourite(new_session, line)
             print(s + " (" + str(i + 1) + "/" +
                   str(len(lines)) + ")     ", end="\r")
+
     print("\nFavorites successfully imported!")
 # end_import_favorites
 
@@ -163,9 +165,8 @@ def export_old_tags(old_session):
     blacklist_url = base_url + user_paths[0] + "/blacklist"
     res = old_session.get(blacklist_url)
 
-    search_str = "window._blacklist_tags = JSON.parse(\""
-    tags = res.text[res.text.index(search_str) + len(search_str):]
-    tags = tags[:tags.index("\")")]
+    tag_regex = r"window._blacklist_tags = JSON.parse\(\"(\[[^.;]*\])\"\);"
+    tags = re.search(tag_regex, res.text).groups()[0]
     tags = tags.encode().decode("unicode-escape")
 
     with open(tag_path, "w") as f:
@@ -179,12 +180,9 @@ def import_old_tags(new_session):
     blacklist_url = base_url + user_paths[1] + "/blacklist"
 
     res = new_session.get(blacklist_url)
-    # shifts start to "csrf_token" to isolate the token initialisation
-    token = res.text[res.text.index("csrf_token:"):]
-    # shift end to first instance of "," and removes the initialisation variable to get only the token value
-    token_str = token[0:token.index(",")].replace("csrf_token:", "").strip()
-    # replaces the "" in the initialisation process
-    token_str = token_str.replace("\"", "")
+
+    token_regex = r"csrf_token: \"([a-zA-Z0-9]{1,})\""
+    token = re.search(token_regex, res.text).groups()[0]
 
     with open(tag_path, "r") as f:
         tag_str = f.read()
@@ -196,7 +194,7 @@ def import_old_tags(new_session):
             "removed": []
         }, headers={
             "x-requested-with": "XMLHttpRequest",
-            "x-csrftoken": token_str,
+            "x-csrftoken": token,
             "referer": blacklist_url
         })
         if res.ok:
@@ -217,8 +215,12 @@ def export_bio(old_session):
     res = old_session.get(bio_url)
     soup = BeautifulSoup(res.content, "html.parser")
 
-    about = soup.find("input", {"id": "id_about"}).attrs["value"]
-    fav_tags = soup.find("input", {"id": "id_favorite_tags"}).attrs["value"]
+    about = soup.find("input", {"id": "id_about"})
+    about = about.attrs["value"] if about.has_attr("value") else ""
+
+    fav_tags = soup.find("input", {"id": "id_favorite_tags"})
+    fav_tags = fav_tags.attrs["value"] if fav_tags.has_attr("value") else ""
+
     themes = soup.find("select", {"id": "id_theme"}).find_all("option")
 
     for theme in themes:
@@ -268,7 +270,8 @@ def query(s):
 
 
 def export_nh():
-    old_sessionid = input("Please enter your old account's login session: ").strip()
+    old_sessionid = input(
+        "Please enter your old account's login session: ").strip()
     old_session = login_session(old_sessionid, 0)
     if query("Do you wish to export your blacklisted tags?"):
         export_old_tags(old_session)
@@ -280,7 +283,8 @@ def export_nh():
 
 
 def import_nh():
-    new_sessionid = input("Please enter your new account's login session: ").strip()
+    new_sessionid = input(
+        "Please enter your new account's login session: ").strip()
     new_session = login_session(new_sessionid, 1)
     if query("Do you wish to import your old blacklisted tags?"):
         import_old_tags(new_session)
