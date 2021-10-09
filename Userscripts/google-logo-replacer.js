@@ -1,55 +1,65 @@
 // ==UserScript==
-// @name         Chin Fast Image Downloader
+// @name         Google Logo Replacer
 // @namespace    https://greasyfork.org/en/users/86284-benjababe
-// @version      1.04
-// @description  One click to download current hovered image/webmeme
+// @version      1.02
+// @description  Replaces google logo on search and image page
 // @author       Benjababe
-
-// @match        https://boards.4channel.org/*
-// @match        https://arch.b4k.co/*
-// @match        https://archived.moe/*
-// @match        https://archive.nyafuu.org/*
-// @match        https://archive.wakarimasen.moe/*
-// @match        https://desuarchive.org/*
-// @match        https://warosu.org/*
-
-// @grant        GM_download
+// @match        https://*.google.com/*
+// @match        https://*.google.com/sg/*
+// @grant        GM_addStyle
 // ==/UserScript==
-
-// jshint esversion: 6
 
 (function () {
     'use strict';
+    const SEARCH_URL = "https://i.imgur.com/8nBk4bu.png",
+        IMAGE_URL = "https://i.imgur.com/oJzo0UN.png";
 
-    const HOTKEY = "Pause";
-
-    document.onkeydown = (e) => {
-        // key can be whatever you want, I choose pause as it's what I bound my mouse side keys to
-        if (e.code === HOTKEY) {
-            // get all elements hovered
-            let els = document.querySelectorAll(":hover");
-            els.forEach((el) => {
-                // only download for images
-                if (el.tagName.toLowerCase() === "img") {
-                    // link to original image/webmeme usually is the parent <a> element
-                    let parent = el.parentNode,
-                        url = parent.href,
-                        filename = HDFilenameFromURL(url);
-                    GM_download(url, filename);
-                }
-            });
-        }
-    }
-
-    // eg. ".../1622014662736s.jpg -> 1622014662736.jpg"
-    let HDFilenameFromURL = (url) => {
-        let SDFilename = url.split("/").pop();
-        SDFilename = SDFilename.split(".");
-
-        if (SDFilename[0][SDFilename[0].length - 1] == "s") {
-            SDFilename[0] = SDFilename[0].slice(0, -1);
+    GM_addStyle(`
+        img.lnXdpd, img#hplogo {
+        /* Google logo on google.com */
+            content: url(${SEARCH_URL});
+            height:310px;
+            max-height:310px;
+            width:600px;
+            max-width:600px;
+            margin-top:-168px;
+            display:inline-block;
         }
 
-        return SDFilename.join(".");
-    }
+        div[title="Google Images"] {
+        /* Google logo on images.google.com */
+            content:""!important;
+            background:url(${IMAGE_URL})no-repeat!important;
+            background-size: 800px 271px!important;
+            z-index:-1!important;
+            height:271px!important;
+            width:800px!important;
+            margin-top: -158px!important;
+            position:relative!important;
+        }
+
+        /* Search bar container */
+        .sfbg {
+	        background: transparent!important;
+        }
+
+        /* Offset top by 110px because this laptop's shitty resolution */
+        div.LLD4me {
+        	margin-top: 110px;
+        }
+
+        div.logo-subtext {
+           /* The "images" text below the google images logo */
+            top:initial!important;
+            left:initial!important;
+            bottom:0!important;
+            right:0!important;
+        	position:absolute!important;
+        }
+
+        #prm {
+            /* Nugget info below search bar */
+            display:none!important;
+        }
+    `);
 })();
