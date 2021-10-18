@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         NTU Kaltura Downloader
 // @namespace    https://greasyfork.org/en/users/86284-benjababe
-// @version      1.1.5
+// @version      1.1.6
 // @description  Fuck kaltura. It's shit
 // @author       Benjababe
 // @match        https://ntulearn.ntu.edu.sg/webapps/*
@@ -75,9 +75,13 @@
 
     // generates download button in the kaltura media gallery (eg. CZ2005)
     let genKPage = (playlist = false) => {
-        let path = location.pathname, entryID, sourceURL,
-            details = document.querySelector("span.data, span.first");
+        let sourceURL = getSourceURL(playlist);
+        listenDOM(playlist);
+    };
 
+
+    let getSourceURL = (playlist = false) => {
+        let path = location.pathname, entryID, sourceURL;
         let pathSpl = path.replace("/media/t/", "").split("/");
 
         if (playlist) {
@@ -89,8 +93,7 @@
         }
 
         sourceURL = sourceTemplate.replace("%ENTRY_ID_HERE%", entryID);
-        listenDOM(sourceURL);
-        console.log(location.href, sourceURL);
+        return sourceURL;
     };
 
 
@@ -109,12 +112,18 @@
 
     // appends download to action list when it is detected in MutationObserver
     // whole page doesn't load in at once in this scenario
-    let listenDOM = (sourceURL) => {
+    let listenDOM = (playlist = false) => {
         let observer = new window.MutationObserver(function (mutations, observer) {
-            mutations.forEach((mutation) => {
-                if (mutation.target.id == "entryActions") {
-                    let ul = mutation.target.querySelector("ul#entryActionsMenu"),
-                        li = document.createElement("li"),
+            let ul = document.querySelector("ul#entryActionsMenu");
+
+            // only appends when the list is loaded in
+            if (ul != undefined) {
+                let sourceURL = getSourceURL(playlist);
+                let dlBtn = document.querySelector("#dlBtn");
+
+                // appends button to list if it doesn't exist yet
+                if (dlBtn == undefined) {
+                    let li = document.createElement("li"),
                         a = document.createElement("a"),
                         span = document.createElement("span");
 
@@ -122,10 +131,16 @@
                     a.appendChild(span);
                     a.href = sourceURL;
                     li.appendChild(a);
+                    li.id = "dlBtn";
                     li.setAttribute("role", "presentation");
                     ul.appendChild(li);
                 }
-            });
+
+                // changes button download url on page change
+                else {
+                    dlBtn.href = sourceURL;
+                }
+            }
         });
 
         observer.observe(document, {
