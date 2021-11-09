@@ -1,0 +1,1 @@
+Didn't know a lick of video editing software back in mid 2017 so I decided to use CSS for the video "effect" instead. Looks pretty scuffed sadly.
