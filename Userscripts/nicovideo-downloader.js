@@ -6,6 +6,7 @@
 // @author       Benjababe
 // @match        https://www.nicovideo.jp/watch/*
 // @icon         https://www.google.com/s2/favicons?domain=nicovideo.jp
+// @license      MIT
 
 // @grant        GM_download
 // ==/UserScript==
