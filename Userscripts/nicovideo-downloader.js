@@ -53,11 +53,16 @@
         for (let i = 0; i < mainVideoPlayer.childElementCount; i++) {
             let child = mainVideoPlayer.childNodes[i];
             if (child.tagName.toLowerCase() == "video") {
-                // update download text next to video title and tab title
-                let progressTxt = document.createElement("h2");
-                progressTxt.id = "progressTxt";
-                progressTxt.innerText = "Downloading: 0%";
-                TITLE.parentNode.appendChild(progressTxt);
+                let progressTxt = document.querySelector("#progressTxt");
+
+                // in case it was created already
+                if (progressTxt == undefined) {
+                    // update download text next to video title and tab title
+                    progressTxt = document.createElement("h2");
+                    progressTxt.id = "progressTxt";
+                    progressTxt.innerText = "Downloading: 0%";
+                    TITLE.parentNode.appendChild(progressTxt);
+                }
 
                 let titleTxt = TITLE.innerText;
 
