@@ -8,6 +8,7 @@
 // @match        https://ntulearnv.ntu.edu.sg/media/*
 // @match        https://ntulearnv.ntu.edu.sg/playlist/dedicated/*
 // @grant        none
+// @license      MIT
 // ==/UserScript==
 
 (function () {

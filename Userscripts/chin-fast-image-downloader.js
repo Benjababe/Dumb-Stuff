@@ -12,6 +12,7 @@
 // @match        https://archive.wakarimasen.moe/*
 // @match        https://desuarchive.org/*
 // @match        https://warosu.org/*
+// @license      MIT
 
 // @grant        GM_download
 // ==/UserScript==

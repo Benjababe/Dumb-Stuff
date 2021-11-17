@@ -6,6 +6,8 @@
 // @author       Benjababe
 // @match        https://*.google.com/*
 // @match        https://*.google.com/sg/*
+// @license      MIT
+
 // @grant        GM_addStyle
 // ==/UserScript==
 
