@@ -4,7 +4,6 @@
 // @version      1.04
 // @description  One click to download current hovered image/webmeme
 // @author       Benjababe
-// @license      MIT
 
 // @match        https://boards.4channel.org/*
 // @match        https://arch.b4k.co/*
@@ -31,6 +30,7 @@
             let els = document.querySelectorAll(":hover");
             els.forEach((el) => {
                 // only download for images
+                // for webms, it works only on its thumbnail
                 if (el.tagName.toLowerCase() === "img") {
                     // link to original image/webmeme usually is the parent <a> element
                     let parent = el.parentNode,
@@ -43,14 +43,12 @@
     }
 
     // eg. ".../1622014662736s.jpg -> 1622014662736.jpg"
+    // this function shouldn't ever need to be called, it's ran just in case
     let HDFilenameFromURL = (url) => {
-        let SDFilename = url.split("/").pop();
-        SDFilename = SDFilename.split(".");
+        let SDFilename = url.split("/").pop(),
+            re = /([0-9]{1,})[s]{0,}([.a-zA-Z]{1,})/,
+            match = SDFilename.match(re);
 
-        if (SDFilename[0][SDFilename[0].length - 1] == "s") {
-            SDFilename[0] = SDFilename[0].slice(0, -1);
-        }
-
-        return SDFilename.join(".");
+        return match[1] + match[2];
     }
 })();
