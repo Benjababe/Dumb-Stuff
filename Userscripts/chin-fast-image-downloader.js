@@ -4,6 +4,7 @@
 // @version      1.04
 // @description  One click to download current hovered image/webmeme
 // @author       Benjababe
+// @license      MIT
 
 // @match        https://boards.4channel.org/*
 // @match        https://arch.b4k.co/*
@@ -12,7 +13,6 @@
 // @match        https://archive.wakarimasen.moe/*
 // @match        https://desuarchive.org/*
 // @match        https://warosu.org/*
-// @license      MIT
 
 // @grant        GM_download
 // ==/UserScript==

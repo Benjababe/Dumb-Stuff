@@ -4,11 +4,13 @@
 // @version      1.1.6
 // @description  Fuck kaltura. It's shit
 // @author       Benjababe
+// @license      MIT
+
 // @match        https://ntulearn.ntu.edu.sg/webapps/*
 // @match        https://ntulearnv.ntu.edu.sg/media/*
 // @match        https://ntulearnv.ntu.edu.sg/playlist/dedicated/*
+
 // @grant        none
-// @license      MIT
 // ==/UserScript==
 
 (function () {

@@ -4,9 +4,10 @@
 // @version      1.02
 // @description  Replaces google logo on search and image page
 // @author       Benjababe
+// @license      MIT
+
 // @match        https://*.google.com/*
 // @match        https://*.google.com/sg/*
-// @license      MIT
 
 // @grant        GM_addStyle
 // ==/UserScript==

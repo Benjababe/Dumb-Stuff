@@ -4,9 +4,10 @@
 // @version      1.0
 // @description  Download your nicovideos with one simple click
 // @author       Benjababe
+// @license      MIT
+
 // @match        https://www.nicovideo.jp/watch/*
 // @icon         https://www.google.com/s2/favicons?domain=nicovideo.jp
-// @license      MIT
 
 // @grant        GM_download
 // ==/UserScript==
