@@ -12,6 +12,8 @@
 // @grant        GM_addStyle
 // ==/UserScript==
 
+// jshint esversion: 6
+
 (function () {
     'use strict';
     const SEARCH_URL = "https://i.imgur.com/8nBk4bu.png",

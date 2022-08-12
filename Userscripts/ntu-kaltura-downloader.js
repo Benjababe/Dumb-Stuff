@@ -13,6 +13,8 @@
 // @grant        none
 // ==/UserScript==
 
+// jshint esversion: 6
+
 (function () {
     const sourceTemplate = "https://api.sg.kaltura.com/p/117/sp/11700/playManifest/entryId/%ENTRY_ID_HERE%/format/download/protocol/https/flavorParamIds/0",
         entryPrefix = "/entry_id/";

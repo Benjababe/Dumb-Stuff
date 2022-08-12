@@ -12,6 +12,8 @@
 // @grant        GM_download
 // ==/UserScript==
 
+// jshint esversion: 6
+
 (function () {
     'use strict';
 
