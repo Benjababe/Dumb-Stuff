@@ -13,11 +13,13 @@
 // @grant        none
 // ==/UserScript==
 
-// jshint esversion: 6
-
+// jshint esversion: 8
 (function () {
-    const sourceTemplate = "https://api.sg.kaltura.com/p/117/sp/11700/playManifest/entryId/%ENTRY_ID_HERE%/format/download/protocol/https/flavorParamIds/0",
+    const partnerID = "117",
+        sourceTemplate = `https://api.sg.kaltura.com/p/${partnerID}/sp/${partnerID}00/playManifest/entryId/%ENTRY_ID_HERE%/format/download/protocol/https/flavorParamIds/0`,
         entryPrefix = "/entry_id/";
+
+    console.log(sourceTemplate);
 
     window.onload = () => {
         // regular blackboard page with embedded player
@@ -34,7 +36,7 @@
         if (location.pathname.includes("/playlist/dedicated/")) {
             genKPage(true);
         }
-    }
+    };
 
     let genBlackBoard = () => {
         console.log("NTU Kaltura Downloader running...");
@@ -85,6 +87,7 @@
     };
 
 
+    // returns video source URL using entry ID in current URL
     let getSourceURL = (playlist = false) => {
         let path = location.pathname, entryID, sourceURL;
         let pathSpl = path.replace("/media/t/", "").split("/");
@@ -115,35 +118,68 @@
     };
 
 
+    // larger video should have a poster attribute with entry_id
+    let getLargerVidEntryID = (kVideo) => {
+        let posterURL = kVideo.getAttribute("poster"),
+            posterRegex = /entry_id\/([\w]+)\//,
+            match = posterURL.match(posterRegex);
+
+        return match[1];
+    };
+
+
     // appends download to action list when it is detected in MutationObserver
     // whole page doesn't load in at once in this scenario
     let listenDOM = (playlist = false) => {
         let observer = new window.MutationObserver(function (mutations, observer) {
             let ul = document.querySelector("ul#entryActionsMenu");
 
-            // only appends when the list is loaded in
+            // only appends when the "ACTIONS" dropdown list is loaded in
             if (ul != undefined) {
-                let sourceURL = getSourceURL(playlist);
-                let dlBtn = document.querySelector("#dlBtn");
+                let btnDl = document.querySelectorAll(".btn-dl");
 
-                // appends button to list if it doesn't exist yet
-                if (dlBtn == undefined) {
+                // remove previously added download buttons
+                if (btnDl != undefined) {
+                    for (let i = 0; i < btnDl.length; i++) {
+                        btnDl[i].remove();
+                    }
+                }
+
+                // needs to look into inner iframe context to search for video element
+                let kplayerIFrame = document.querySelector("#kplayer_ifp"),
+                    kplayerIFrameDOM = kplayerIFrame.contentWindow.document.body,
+                    kVideos = Array.from(kplayerIFrameDOM.getElementsByTagName("video"));
+
+                // for each video, insert a download button
+                for (let i = 0; i < kVideos.length; i++) {
+                    let kVideo = kVideos[i],
+                        sourceURL = "",
+                        entryID = 0;
+
+                    // this should be the smaller video by default
+                    if (kVideo.hasAttribute("kentryid")) {
+                        entryID = kVideo.getAttribute("kentryid");
+                    }
+
+                    // this should be the bigger video by default
+                    else {
+                        entryID = getLargerVidEntryID(kVideo);
+                    }
+
+                    sourceURL = sourceTemplate.replace("%ENTRY_ID_HERE%", entryID);
+
+                    // inserts download button into dropdown list
                     let li = document.createElement("li"),
                         a = document.createElement("a"),
                         span = document.createElement("span");
 
-                    span.innerText = "Download";
+                    span.innerText = `Download Source ${i + 1}`;
                     a.appendChild(span);
                     a.href = sourceURL;
                     li.appendChild(a);
-                    li.id = "dlBtn";
+                    li.className = "btn-dl";
                     li.setAttribute("role", "presentation");
                     ul.appendChild(li);
-                }
-
-                // changes button download url on page change
-                else {
-                    dlBtn.href = sourceURL;
                 }
             }
         });
@@ -152,7 +188,7 @@
             subtree: true,
             attributes: true
         });
-    }
+    };
 
 })();
 
