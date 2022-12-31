@@ -156,6 +156,7 @@
                         sourceURL = "",
                         entryID = 0;
 
+                    // TODO there HAS to be a simpler way than doing this manual search
                     // this should be the smaller video by default
                     if (kVideo.hasAttribute("kentryid")) {
                         entryID = kVideo.getAttribute("kentryid");
