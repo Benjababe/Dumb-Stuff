@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         NTU Kaltura Downloader
 // @namespace    https://greasyfork.org/en/users/86284-benjababe
-// @version      1.1.6
+// @version      1.1.7
 // @description  Fuck kaltura. It's shit
 // @author       Benjababe
 // @license      MIT
