@@ -1,14 +1,16 @@
 // ==UserScript==
 // @name         NTU Kaltura Downloader
 // @namespace    https://greasyfork.org/en/users/86284-benjababe
-// @version      1.1.7
+// @version      1.1.8
 // @description  Fuck kaltura. It's shit
 // @author       Benjababe
 // @license      MIT
 
 // @match        https://ntulearn.ntu.edu.sg/webapps/*
 // @match        https://ntulearnv.ntu.edu.sg/media/*
+// @match        https://ntulearnv1.ntu.edu.sg/media/*
 // @match        https://ntulearnv.ntu.edu.sg/playlist/dedicated/*
+// @match        https://ntulearnv1.ntu.edu.sg/playlist/dedicated/*
 
 // @grant        none
 // ==/UserScript==
@@ -156,7 +158,6 @@
                         sourceURL = "",
                         entryID = 0;
 
-                    // TODO there HAS to be a simpler way than doing this manual search
                     // this should be the smaller video by default
                     if (kVideo.hasAttribute("kentryid")) {
                         entryID = kVideo.getAttribute("kentryid");
