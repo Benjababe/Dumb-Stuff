@@ -11,17 +11,16 @@
 // @match        https://ntulearnv1.ntu.edu.sg/media/*
 // @match        https://ntulearnv.ntu.edu.sg/playlist/dedicated/*
 // @match        https://ntulearnv1.ntu.edu.sg/playlist/dedicated/*
+// @match        https://ntulearnv1.ntu.edu.sg/browseandembed/index/media-redirect/entryid/*
 
 // @grant        none
 // ==/UserScript==
 
 // jshint esversion: 8
 (function () {
-    const partnerID = "117",
-        sourceTemplate = `https://api.sg.kaltura.com/p/${partnerID}/sp/${partnerID}00/playManifest/entryId/%ENTRY_ID_HERE%/format/download/protocol/https/flavorParamIds/0`,
-        entryPrefix = "/entry_id/";
-
-    console.log(sourceTemplate);
+    const partnerID = "117";
+    const sourceTemplate = `https://api.sg.kaltura.com/p/${partnerID}/sp/${partnerID}00/playManifest/entryId/%ENTRY_ID_HERE%/format/download/protocol/https/flavorParamIds/0`;
+    const entryPrefix = "/entry_id/";
 
     window.onload = () => {
         // regular blackboard page with embedded player
@@ -38,6 +37,11 @@
         if (location.pathname.includes("/playlist/dedicated/")) {
             genKPage(true);
         }
+
+        // embedded single video player
+        if (location.pathname.includes("/browseandembed/")) {
+            genEmbeddedVideo();
+        }
     };
 
     let genBlackBoard = () => {
@@ -47,20 +51,34 @@
         genLinks();
     };
 
+    // generates download button for single video
+    const genEmbeddedVideo = () => {
+        const iframe = document.querySelector("#kplayer_ifp");
+        const regex = /\/browseandembed\/index\/media-redirect\/entryid\/(.+?)\//;
+        const match = location.pathname.match(regex);
+
+        if (!match) {
+            return;
+        }
+
+        const entryID = match[1];
+        const sourceURL = sourceTemplate.replace("%ENTRY_ID_HERE%", entryID);
+        appendDownloadButton(iframe, sourceURL);
+    }
 
     // generates download button for embedded kaltura videos in blackboard page (eg. CZ1106)
-    let genEmbeddedVideos = () => {
+    const genEmbeddedVideos = () => {
         let iframes = Array.from(document.getElementsByTagName("iframe"));
         iframes.forEach((iframe) => {
-            let src = iframe.src,
-                sIndex = src.indexOf(entryPrefix);
+            let src = iframe.src;
+            const sIndex = src.indexOf(entryPrefix);
 
             //stops if it isn't a kultura video iframe
             if (sIndex != -1) {
-                let eidIndex = src.indexOf(entryPrefix) + entryPrefix.length;
+                const eidIndex = src.indexOf(entryPrefix) + entryPrefix.length;
                 src = src.substring(eidIndex);
-                let entryID = src.substring(0, src.indexOf("/")),
-                    sourceURL = sourceTemplate.replace("%ENTRY_ID_HERE%", entryID);
+                const entryID = src.substring(0, src.indexOf("/"));
+                const sourceURL = sourceTemplate.replace("%ENTRY_ID_HERE%", entryID);
 
                 appendDownloadButton(iframe, sourceURL);
             }
@@ -68,13 +86,13 @@
     };
 
     // generated download button for <a> tags to kaltura videos in blackboard page (eg. CZ2002)
-    let genLinks = () => {
-        let links = Array.from(document.querySelectorAll("a[target]"));
+    const genLinks = () => {
+        const links = Array.from(document.querySelectorAll("a[target]"));
         links.forEach((link) => {
             if (link.href.indexOf("https://api.sg.kaltura.com") == 0) {
-                let url = link.href,
-                    entryID = url.split("entry_id=")[1],
-                    sourceURL = sourceTemplate.replace("%ENTRY_ID_HERE%", entryID);
+                const url = link.href;
+                const entryID = url.split("entry_id=")[1];
+                const sourceURL = sourceTemplate.replace("%ENTRY_ID_HERE%", entryID);
 
                 appendDownloadButton(link, sourceURL);
             }
@@ -83,16 +101,17 @@
 
 
     // generates download button in the kaltura media gallery (eg. CZ2005)
-    let genKPage = (playlist = false) => {
-        let sourceURL = getSourceURL(playlist);
+    const genKPage = (playlist = false) => {
+        const sourceURL = getSourceURL(playlist);
         listenDOM(playlist);
     };
 
 
     // returns video source URL using entry ID in current URL
-    let getSourceURL = (playlist = false) => {
-        let path = location.pathname, entryID, sourceURL;
-        let pathSpl = path.replace("/media/t/", "").split("/");
+    const getSourceURL = (playlist = false) => {
+        const path = location.pathname;
+        const pathSpl = path.replace("/media/t/", "").split("/");
+        let entryID, sourceURL;
 
         if (playlist) {
             entryID = pathSpl[pathSpl.length - 1];
@@ -108,8 +127,8 @@
 
 
     // appends download button with sourceURL to whatever element is passed through sibling argument
-    let appendDownloadButton = (sibling, sourceURL) => {
-        let dlBtn = document.createElement("button");
+    const appendDownloadButton = (sibling, sourceURL) => {
+        const dlBtn = document.createElement("button");
         dlBtn.innerText = "Download";
         dlBtn.style.position = "absolute";
         dlBtn.style.userSelect = "none";
@@ -121,10 +140,10 @@
 
 
     // larger video should have a poster attribute with entry_id
-    let getLargerVidEntryID = (kVideo) => {
-        let posterURL = kVideo.getAttribute("poster"),
-            posterRegex = /entry_id\/([\w]+)\//,
-            match = posterURL.match(posterRegex);
+    const getLargerVidEntryID = (kVideo) => {
+        const posterURL = kVideo.getAttribute("poster");
+        const posterRegex = /entry_id\/([\w]+)\//;
+        const match = posterURL.match(posterRegex);
 
         return match[1];
     };
@@ -132,13 +151,13 @@
 
     // appends download to action list when it is detected in MutationObserver
     // whole page doesn't load in at once in this scenario
-    let listenDOM = (playlist = false) => {
-        let observer = new window.MutationObserver(function (mutations, observer) {
-            let ul = document.querySelector("ul#entryActionsMenu");
+    const listenDOM = (playlist = false) => {
+        const observer = new window.MutationObserver(function (mutations, observer) {
+            const ul = document.querySelector("ul#entryActionsMenu");
 
             // only appends when the "ACTIONS" dropdown list is loaded in
             if (ul != undefined) {
-                let btnDl = document.querySelectorAll(".btn-dl");
+                const btnDl = document.querySelectorAll(".btn-dl");
 
                 // remove previously added download buttons
                 if (btnDl != undefined) {
@@ -148,15 +167,14 @@
                 }
 
                 // needs to look into inner iframe context to search for video element
-                let kplayerIFrame = document.querySelector("#kplayer_ifp"),
+                const kplayerIFrame = document.querySelector("#kplayer_ifp"),
                     kplayerIFrameDOM = kplayerIFrame.contentWindow.document.body,
                     kVideos = Array.from(kplayerIFrameDOM.getElementsByTagName("video"));
 
                 // for each video, insert a download button
                 for (let i = 0; i < kVideos.length; i++) {
-                    let kVideo = kVideos[i],
-                        sourceURL = "",
-                        entryID = 0;
+                    const kVideo = kVideos[i];
+                    let entryID = 0;
 
                     // this should be the smaller video by default
                     if (kVideo.hasAttribute("kentryid")) {
@@ -168,12 +186,12 @@
                         entryID = getLargerVidEntryID(kVideo);
                     }
 
-                    sourceURL = sourceTemplate.replace("%ENTRY_ID_HERE%", entryID);
+                    const sourceURL = sourceTemplate.replace("%ENTRY_ID_HERE%", entryID);
 
                     // inserts download button into dropdown list
-                    let li = document.createElement("li"),
-                        a = document.createElement("a"),
-                        span = document.createElement("span");
+                    const li = document.createElement("li");
+                    const a = document.createElement("a");
+                    const span = document.createElement("span");
 
                     span.innerText = `Download Source ${i + 1}`;
                     a.appendChild(span);
